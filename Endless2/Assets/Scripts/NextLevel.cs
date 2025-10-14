@@ -1,10 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class NextLevel : MonoBehaviour
 {
-    [Header("Nome da próxima cena")]
+    [Header("Nome da pr�xima cena")]
     public string nomeProximaCena;
 
     [Header("Tempo antes de mudar de cena")]
