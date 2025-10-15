@@ -95,6 +95,7 @@ namespace Platformer
         {
             if (other.CompareTag("Coin"))
             {
+                Debug.Log("TESTE MOEDA");
                 gameManager.coinsCounter += 1;
                 Destroy(other.gameObject);
             }

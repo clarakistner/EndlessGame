@@ -1,32 +1,27 @@
-﻿using UnityEngine;
-using UnityEngine.SceneManagement;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-public class NextLevel : MonoBehaviour
+public class DestroyerScript : MonoBehaviour
 {
-    [Header("Nome da próxima cena")]
-    public string nomeProximaCena;
 
-    [Header("Tempo antes de mudar de cena")]
-    public float delayProximaFase = 2f;
+    public Canvas GameOver;
 
-
-    public void Acionar()
+    private void Start()
     {
-        StartCoroutine(IrParaProximaFase());
+        GameOver.gameObject.SetActive(false);
+        Time.timeScale = 1;
     }
 
-    private IEnumerator IrParaProximaFase()
+    void OnCollisionEnter2D(Collision2D outro)
     {
-        yield return new WaitForSeconds(delayProximaFase);
 
-        if (!string.IsNullOrEmpty(nomeProximaCena))
+        if (outro.gameObject.tag == "Player")
         {
-            SceneManager.LoadScene(nomeProximaCena);
+            Time.timeScale = 0;
+            GameOver.gameObject.SetActive(true);
+            return;
         }
-        else
-        {
-            Debug.LogWarning("Nenhum nome de cena definido em NextLevel!");
-        }
+
     }
 }

@@ -9,6 +9,6 @@ public class PlayAgain : MonoBehaviour
     {
         Debug.Log("Reiniciando...");
         Time.timeScale = 1;
-        SceneManager.LoadScene("SampleScene");
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }
