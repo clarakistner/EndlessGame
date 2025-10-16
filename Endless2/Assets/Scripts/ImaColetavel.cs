@@ -1,72 +1,221 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 public class ImaColetavel : MonoBehaviour
 {
-    public float duracao = 5f;               // Tempo que o ímã fica ativo
-    public float velocidadeAtracao = 5f;     // Velocidade da atração
-    public float raioAtracao = 10f;          // Raio de alcance do ímã
+    [Header("DuraÃ§Ã£o e atraÃ§Ã£o")]
+    public float duracao = 5f;                 // segundos (ignora timeScale)
+    public float velocidadeAtracao = 18f;      // m/s
+    public float raioAtracao = 10f;            // metros
+    public float pickupAssistDistance = 0.25f; // â€œgrudaâ€ no player nesta distÃ¢ncia
 
-    private bool coletado = false;
-    private Transform jogador;               // Referência ao jogador
+    [Header("DetecÃ§Ã£o (opcional)")]
+    public LayerMask coletavelMask;            // defina as layers (Coin/Fire). Se 0, usa Find por tag.
 
-    void OnTriggerEnter2D(Collider2D other)
+    [Header("Posicionamento acima da cabeÃ§a")]
+    public float padding = 0.05f;
+    public Transform ancoraNaCabeca;           // arraste um Empty no topo da cabeÃ§a se quiser (HeadAnchor)
+
+    [Header("Escala de MUNDO do Ã­mÃ£")]
+    public Vector3 escalaMundoDesejada = new Vector3(4f, 4f, 4f);
+
+    private bool ativo = false;
+    private Transform jogador;
+    private float fimTempoReal = 0f;           // usa Time.realtimeSinceStartup
+    private Vector3 escalaInicialLocal;
+
+    private void Awake()
     {
-        if (!coletado && other.CompareTag("Player"))
+        escalaInicialLocal = transform.localScale;
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (ativo) return;
+
+        if (other.CompareTag("Player"))
         {
-            coletado = true;
             jogador = other.transform;
 
-            // Gruda no jogador
-            transform.SetParent(jogador);
-            transform.localPosition = Vector3.up; // Pode ajustar a posição do ímã no corpo do jogador
+            // Fallback automÃ¡tico: tenta achar "HeadAnchor" no player se nÃ£o foi setado no Inspector
+            if (ancoraNaCabeca == null)
+            {
+                var achou = jogador.Find("HeadAnchor");
+                if (achou != null) ancoraNaCabeca = achou;
+            }
 
-            Debug.Log("Ímã coletado!");
-            StartCoroutine(AtivarImanTemporario());
+            // MantÃ©m posiÃ§Ã£o/rotaÃ§Ã£o atuais em MUNDO ao parentear
+            transform.SetParent(jogador, worldPositionStays: true);
+
+            // Corrige rotaÃ§Ã£o e escala de MUNDO
+            transform.rotation = Quaternion.identity;
+            AplicarEscalaMundoConstante(escalaMundoDesejada);
+
+            // Inicia o efeito (timer em tempo REAL, ignora timeScale)
+            fimTempoReal = Time.realtimeSinceStartup + duracao;
+            ativo = true;
+
+            // Posiciona acima da cabeÃ§a jÃ¡ no primeiro frame
+            AtualizarPosicaoAcimaDaCabeca();
         }
     }
 
-    IEnumerator AtivarImanTemporario()
+    private void LateUpdate()
     {
-        float tempoRestante = duracao;
+        if (!ativo || jogador == null) return;
 
-        while (tempoRestante > 0)
+        // MantÃ©m escala de mundo = (4,4,4)
+        AplicarEscalaMundoConstante(escalaMundoDesejada);
+
+        // Reposiciona acima da cabeÃ§a (animaÃ§Ãµes/flip)
+        AtualizarPosicaoAcimaDaCabeca();
+
+        // Atrai objetos todo frame (sem depender da fÃ­sica)
+        Atrair("Coin");
+
+        // Timer em tempo real (independente do timeScale)
+        if (Time.realtimeSinceStartup >= fimTempoReal)
         {
-            AtrairMoedasParaJogador();
-            tempoRestante -= Time.deltaTime;
-            yield return null;
+            Destroy(gameObject);
         }
-
-        Debug.Log("Ímã desativado!");
-        Destroy(gameObject); // Remove o ímã após o tempo
     }
 
-    void AtrairMoedasParaJogador()
+    private void AplicarEscalaMundoConstante(Vector3 escalaMundoAlvo)
     {
-        GameObject[] moedas = GameObject.FindGameObjectsWithTag("Coin");
-        GameObject[] fogos = GameObject.FindGameObjectsWithTag("Fire");
-
-        foreach (GameObject moeda in moedas)
+        if (transform.parent == null)
         {
-            float distancia = Vector2.Distance(moeda.transform.position, jogador.position);
+            transform.localScale = escalaMundoAlvo;
+            return;
+        }
 
-            if (distancia <= raioAtracao)
+        Vector3 p = transform.parent.lossyScale;
+        float sx = (p.x != 0f) ? escalaMundoAlvo.x / p.x : escalaMundoAlvo.x;
+        float sy = (p.y != 0f) ? escalaMundoAlvo.y / p.y : escalaMundoAlvo.y;
+        float sz = (p.z != 0f) ? escalaMundoAlvo.z / p.z : escalaMundoAlvo.z;
+        transform.localScale = new Vector3(sx, sy, sz);
+    }
+
+    private void AtualizarPosicaoAcimaDaCabeca()
+    {
+        if (jogador == null) return;
+
+        if (ancoraNaCabeca != null)
+        {
+            Vector3 alvo = ancoraNaCabeca.position;
+            alvo.y += ObterMeiaAlturaDoIman() + padding;
+            transform.position = alvo;
+            return;
+        }
+
+        Bounds b = ObterBoundsDoPlayer();
+        float magnetHalf = ObterMeiaAlturaDoIman();
+
+        Vector3 alvoMundo = new Vector3(
+            b.center.x,
+            b.max.y + magnetHalf + padding,
+            transform.position.z
+        );
+        transform.position = alvoMundo;
+    }
+
+    private Bounds ObterBoundsDoPlayer()
+    {
+        // Prefere colliders NÃƒO-trigger e habilitados, do prÃ³prio player (evita groundCheck/sensors)
+        var cols = jogador.GetComponentsInChildren<Collider2D>();
+        Collider2D melhor = null;
+        var rbPlayer = jogador.GetComponent<Rigidbody2D>();
+
+        foreach (var c in cols)
+        {
+            if (!c || !c.enabled) continue;
+            if (c.isTrigger) continue; // ignora sensores
+            // restringe ao corpo do player (mesmo rigidbody ou no root)
+            if (c.transform == jogador || (rbPlayer != null && c.attachedRigidbody == rbPlayer))
             {
-                // Move a moeda em direção ao jogador
-                Vector3 direcao = (jogador.position - moeda.transform.position).normalized;
-                moeda.transform.position += direcao * velocidadeAtracao * Time.deltaTime;
+                melhor = c; break;
             }
         }
-        foreach (GameObject fogo in fogos)
-        {
-            float distancia = Vector2.Distance(fogo.transform.position, jogador.position);
+        if (melhor != null) return melhor.bounds;
 
-            if (distancia <= raioAtracao)
+        // SenÃ£o, usa o SpriteRenderer principal do player
+        var sr = jogador.GetComponent<SpriteRenderer>();
+        if (sr != null) return sr.bounds;
+
+        // Fallback
+        return new Bounds(jogador.position, Vector3.one);
+    }
+
+    private float ObterMeiaAlturaDoIman()
+    {
+        float h = 0f;
+        var col = GetComponentInChildren<Collider2D>();
+        var sr = GetComponentInChildren<SpriteRenderer>();
+        if (col != null) h = col.bounds.extents.y;
+        else if (sr != null) h = sr.bounds.extents.y;
+        return h;
+    }
+
+    private void Atrair(string tag)
+    {
+        if (jogador == null) return;
+
+        float dt = (Time.timeScale > 0f ? Time.deltaTime : Time.unscaledDeltaTime);
+        if (dt <= 0f) dt = 0.016f; // fallback mÃ­nimo
+
+        if (coletavelMask.value != 0)
+        {
+            // DetecÃ§Ã£o por LayerMask (mais performÃ¡tica/precisa)
+            var hits = Physics2D.OverlapCircleAll((Vector2)jogador.position, raioAtracao, coletavelMask);
+            for (int i = 0; i < hits.Length; i++)
             {
-                // Move a moeda em direção ao jogador
-                Vector3 direcao = (jogador.position - fogo.transform.position).normalized;
-                fogo.transform.position += direcao * velocidadeAtracao * Time.deltaTime;
+                var h = hits[i];
+                if (!h || !h.CompareTag(tag)) continue;
+                PuxarTransform(h.transform, dt);
             }
         }
+        else
+        {
+            // Fallback por tag
+            var gos = GameObject.FindGameObjectsWithTag(tag);
+            for (int i = 0; i < gos.Length; i++)
+            {
+                var go = gos[i];
+                if (!go) continue;
+                if (Vector2.Distance(go.transform.position, jogador.position) <= raioAtracao)
+                    PuxarTransform(go.transform, dt);
+            }
+        }
+    }
+
+    private void PuxarTransform(Transform t, float dt)
+    {
+        if (t == null) return;
+
+        // Durante a sucÃ§Ã£o, ignore fÃ­sica e mova por transform (funciona mesmo com timeScale=0)
+        var rb = t.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.isKinematic = true;
+            rb.gravityScale = 0f;
+        }
+
+        Vector3 dir = (jogador.position - t.position).normalized;
+        t.position += dir * (velocidadeAtracao * dt);
+
+        float d = Vector2.Distance(t.position, jogador.position);
+        if (d <= pickupAssistDistance)
+        {
+            // Snap suave pra dentro do player pra garantir o gatilho de coleta
+            t.position = Vector3.MoveTowards(t.position, jogador.position, 100f * dt);
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Vector3 centro = (jogador != null) ? jogador.position : transform.position;
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(centro, raioAtracao);
     }
 }

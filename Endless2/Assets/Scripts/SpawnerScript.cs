@@ -16,7 +16,7 @@ public class SpawnerScript : MonoBehaviour
 
     void Spawn()
     {
-        Instantiate(vetor[Random.Range(0, vetor.Length)], 
+        Instantiate(vetor[Random.Range(0, vetor.Length)],
             transform.position, Quaternion.identity);
         Invoke("Spawn", Random.Range(spawnMin, spawnMax));
     }
