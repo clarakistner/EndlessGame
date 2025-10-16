@@ -26,6 +26,7 @@ namespace Platformer
 
         void Start()
         {
+            Debug.Log("teste de gamemanager");
             rb = GetComponent<Rigidbody2D>();
             animator = GetComponent<Animator>();
             gameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
