@@ -1222,9 +1222,41 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3384161665801935151, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 911
+      objectReference: {fileID: 0}
+    - target: {fileID: 3384161665801935151, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 422
+      objectReference: {fileID: 0}
     - target: {fileID: 3767163455193922762, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
       propertyPath: m_Name
       value: Canvas Placar
+      objectReference: {fileID: 0}
+    - target: {fileID: 4247465382766044377, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -1063
+      objectReference: {fileID: 0}
+    - target: {fileID: 4247465382766044377, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 402
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572086926058849304, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -849
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572086926058849304, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 461
+      objectReference: {fileID: 0}
+    - target: {fileID: 5902611861790235624, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 960
+      objectReference: {fileID: 0}
+    - target: {fileID: 5902611861790235624, guid: 6512c8ecbacde1049bc48bc0b3412986, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 424
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
